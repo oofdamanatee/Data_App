@@ -50,7 +50,7 @@ else
     [X,Y] = meshgrid(x,y);
     mask = ones(size(X));
     mask(X.^2+Y.^2 > rlim.^2) = 0;
-    norm = trapz(y,trapz(x,exp(-(X.^2+Y.^2)/(2*sigma^2)).*mask,1));
+    norm = trapz(y,trapz(x,exp(-((X-dx).^2+(Y-dy).^2)/(2*sigma^2)).*mask,1));
     clear X Y
     
     [X,Y,T] = ndgrid(x,y,t+t0);

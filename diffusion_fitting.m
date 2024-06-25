@@ -1,39 +1,40 @@
 %% This script is for MANUAL FITTING and DATA ANALYSIS
 % of the FTIR data for use OUTSIDE of the app.
 %%
-spectra_range = [2:206 211:251];
-[data1,freq] = LoadSpectra('/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-06-13',...
-    "ML_20240613_",spectra_range);
+spectra_range = [2:105];
+[data1,freq] = LoadSpectra('/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-06-24',...
+    "ML_20240624_2_",spectra_range);
 freq = freq(:,1);
+
 if freq(2) - freq(1) > 0
     freq = flip(freq);
 end
 % [data1,freq] = LoadSpectra();
 
 % INITIALIZE OBJECT
-f = FTIRexperiment(data1,freq,0.2,12,3140,300,"70% EMIM NTF2 in PEGDA","2024-06-13","Matt");
+f = FTIRexperiment(data1,freq,0.1,12,1600,300,"50% EMIM NTF2 in PEGDA","2024-06-24","Matt");
 % f = f.timeAxis;
-f = f.timeAxis('/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-06-13',...
-    "ML_20240613_",spectra_range);
+f = f.timeAxis('/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-06-24',...
+    "ML_20240624_2_",spectra_range);
 % f = f.timeAxis;
 
 clear spectra_range
 %% make initial guesses
 % have the user select which spectrum to guess from
-ii = 225;
+ii = 104;
 
 % set the fit range
 range1 = [2290 2390];
 
 % set starting point using values from the user
-center = 2339;
-wg = 1.9;
+center = 2340;
+wg = 1.7; 
 wl = 1.7;
-a1 = 2.2;  % main peak height
+a1 = 2.4;  % main peak height
 a2 = 0.07; % expected Boltzmann factor for bend
-a3 = 0.008; % gas lines
-c0 = 1.1;
-c1 = 1e-4; % baseline slope
+a3 = 0; % gas lines
+c0 = 0.7;
+c1 = -1e-4; % baseline slope
 
 %fit function requires fliipped inputs
 freq = flip(f.freqAxis);
@@ -113,10 +114,6 @@ box off
 set(gca,'TickDir','out')
 hold off
 
-%converts data in f to vector of concentration values of CO2
-%for each spectrum, generates time axis, returns a plot of
-%concentration vs time
-%syntax: plotConcOverTime(f)
 plot(subplot(2,1,2),f.timePts,concOverTime(f),'o-','color','blue');
 hold on
 title('Concentration Over Time')
@@ -138,21 +135,22 @@ set(gcf,'Position',[0.5 0 0.35 1])
 %get parameters ready
 t = f.timePts;
 %         t = t(1:end-3);
-%           t = t(1:end-3);
+%           t = t(1:end-15);
 %         t = t-t(1);
 y = f.concOverTime;
 %         y = y(4:end);
-%           y = y(1:end-3);
+%           y = y(1:end-15);
 A = f.radius;
 C = f.finalConc;
 nmax = 150;
 rres = 50;
 rlim = 350;
 sigma = 704;
+dx = 0;
 dy = 0;
-sp = [91 0.243 0]; % put guess here
-ub = [1e5 1e4 0.5*f.radius];
-lb = [0 0 0];
+sp = [49.6 0.28 2.39e-14]; % put guess here
+ub = [1e5 0.281 0.5*f.radius];
+lb = [0 0.279 0];
 
 figure(728);clf
 plot(t,y)
@@ -183,7 +181,7 @@ tic
 [fobj,G,O] = fit(t,y',ft);
 
 toc
-%%
+
 %get results
 yfit = fobj(t);
 out.x = t;
@@ -198,29 +196,40 @@ if out.O.exitflag < 1
     warning('Curve fit did not converge!!! Results might not be trustworthy.');
 end
 
+f.diffusionFitResult = out;
+%% display fit result
 figure(4);clf
 
-plot(out.x,out.ydata,'o','MarkerSize',5,'MarkerEdgeColor','blue','MarkerFaceColor','blue')
+plot(f.diffusionFitResult.x,f.diffusionFitResult.ydata,...
+    'o','MarkerSize',5,'MarkerEdgeColor','blue','MarkerFaceColor','blue')
 hold on
-plot(out.x,out.yfit,'red','LineWidth',1.5)
-residuals = out.yfit - out.ydata(:);
-plot(out.x,(residuals*10 - 0.02),'o','MarkerEdgeColor','red')
+plot(f.diffusionFitResult.x,f.diffusionFitResult.yfit,...
+    'red','LineWidth',1.5)
+residuals = f.diffusionFitResult.yfit - f.diffusionFitResult.ydata(:);
+plot(f.diffusionFitResult.x,(residuals*10 - 0.02),'o','MarkerEdgeColor','red')
 legend('Data points','Fitted curve','Location','northwest')
 hold off
 
 
 % get confidence intervals
-ci = confint(out.fobj);
+ci = confint(f.diffusionFitResult.fobj);
 
-readout = [string(out.fobj.D)]
+readout = [string(f.diffusionFitResult.fobj.D)]
 others = ["95% Confidence Interval is "+ci(1)+" to "+ci(2)+".";...
-    "R^2 = "+string(out.G.rsquare)]
+    "R^2 = "+string(f.diffusionFitResult.G.rsquare)]
 
-fobj
-%%
-figure(712);clf
-plot(g.timePts,g.concOverTime,'blue')
-hold on
-plot(f.timePts,f.concOverTime,'red')
-% plot(f.timePts,f.concOverTime,'black')
-legend("today","the other day",'Location','northwest')
+f.diffusionFitResult.fobj
+
+%% Update lab notebook with results
+f.fitMethod = 'diffusion_moving_beam.m';
+cd("/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/"+f.dateString);
+save(f.dateString,"f")
+
+obj = labarchivesCallObj('notebook','Matt Lab Notebook',...
+    'folder','Experiments',...
+    'page','2024-06-24 Measurement of Diffusion Coefficient of CO2 in 50I50P');
+figure(3)
+obj = obj.updateFigureAttachment;
+figure(4)
+obj = obj.updateFigureAttachment('caption',...
+    "D = "+fobj.D+" um^2/s,C = "+fobj.C+" M,dx = "+fobj.dx+" um");
