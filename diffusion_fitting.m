@@ -160,7 +160,7 @@ hold on
 plot(t,diffusion_moving_beam(t,sp(1),f.radius,sp(2),nmax,sigma,sp(3),dy,"rlim",rlim))
 
 
-%%
+%% Actually do the fit
 
 %set up options and type
 opts = fitoptions('Method','NonlinearLeastSquares',...
