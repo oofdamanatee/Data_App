@@ -226,5 +226,25 @@ classdef FTIRexperiment
                 obj.finalSpectrum = uh;
             end
         end
+        function [m,idx] = getInflectionPointSlope(obj,dataSpreadAvg)
+            max_tries = dataSpreadAvg;
+            inflection_idxs = [];
+            for jj = 1:max_tries
+                n = jj;
+                y = obj.concOverTime;
+                y = y(1:n:end);
+                ii = 1;
+                this = diff(y,2);
+                while this(ii) > 0
+                    ii = ii + 1;
+                end
+                inflection_idxs(jj) = ii*jj;
+            end
+            inflection_idxs;
+            idx = round(mean(inflection_idxs));
+            t = obj.timePts;
+            y = obj.concOverTime;
+            m = (y(idx+1)-y(idx-1))/(t(idx+1)-t(idx-1));
+        end
     end
 end

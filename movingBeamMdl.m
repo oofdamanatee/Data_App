@@ -21,9 +21,6 @@ classdef movingBeamMdl < diffusion_function
                 't0',uh.t0);
             %obj.simMatrix = obj.simMatrix';
         end
-        function obj = fitFunction(obj)
-            
-        end
     end
     
 end

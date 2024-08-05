@@ -1,9 +1,13 @@
 %% This script is for MANUAL FITTING and DATA ANALYSIS
 % of the FTIR data for use OUTSIDE of the app.
 %%
-spectra_range = [2:105];
-[data1,freq] = LoadSpectra('/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-06-24',...
-    "ML_20240624_2_",spectra_range);
+cd ~  % This is here because sometimes MATLAB gets confused 
+% finding the Isilon folder so you have to reset the current folder to
+% somewhere on the disk first.
+spectra_range = [2:77];
+[data1,freq] = LoadSpectra(...
+    '/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-08-02',...
+    "ML_20240802_2_",spectra_range);
 freq = freq(:,1);
 
 if freq(2) - freq(1) > 0
@@ -12,29 +16,30 @@ end
 % [data1,freq] = LoadSpectra();
 
 % INITIALIZE OBJECT
-f = FTIRexperiment(data1,freq,0.1,12,1600,300,"50% EMIM NTF2 in PEGDA","2024-06-24","Matt");
+f = FTIRexperiment(data1,freq,0.08,12,1550,120,"Pure EMIM NTf2","2024-08-02","Matt");
 % f = f.timeAxis;
-f = f.timeAxis('/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-06-24',...
-    "ML_20240624_2_",spectra_range);
+f = f.timeAxis(...
+    '/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-08-02',...
+    "ML_20240802_2_",spectra_range);
 % f = f.timeAxis;
 
 clear spectra_range
 %% make initial guesses
 % have the user select which spectrum to guess from
-ii = 104;
+ii = 60;
 
 % set the fit range
 range1 = [2290 2390];
 
 % set starting point using values from the user
-center = 2340;
+center = 2342.5;
 wg = 1.7; 
 wl = 1.7;
-a1 = 2.4;  % main peak height
+a1 = 2.7;  % main peak height
 a2 = 0.07; % expected Boltzmann factor for bend
-a3 = 0; % gas lines
-c0 = 0.7;
-c1 = -1e-4; % baseline slope
+a3 = 0.02; % gas lines
+c0 = 1.18;
+c1 = 5.5e-5; % baseline slope
 
 %fit function requires fliipped inputs
 freq = flip(f.freqAxis);
@@ -52,7 +57,7 @@ res = ydata-yfit;
 sse = sum(res.^2);
 
 figure(1);clf
-plot(x,ydata,'o',x,yfit,x,res-0.1,'r-o')
+plot(x,ydata,'o',x,yfit,x,res+1,'r-o')
 %app.UIAxes3.Title = (sprintf('Initial guess SSE = %f',sse));
 %% do the gas line fit
 T = tic; %time the fitting for later display
@@ -68,7 +73,7 @@ figure(2);clf
 for ii = iis
     plot(f.fittedSpectra(ii).x,f.fittedSpectra(ii).ydata,'o',...
         f.fittedSpectra(ii).x,f.fittedSpectra(ii).yfit,...
-        f.fittedSpectra(ii).x,f.fittedSpectra(ii).res-0.1,'ro')
+        f.fittedSpectra(ii).x,f.fittedSpectra(ii).res + 1,'ro')
     hold on
 end
 hold off
@@ -148,9 +153,9 @@ rlim = 350;
 sigma = 704;
 dx = 0;
 dy = 0;
-sp = [49.6 0.28 2.39e-14]; % put guess here
-ub = [1e5 0.281 0.5*f.radius];
-lb = [0 0.279 0];
+sp = [200 0.3 0]; % put guess here
+ub = [1e5 1e3 0.5*f.radius];
+lb = [0 0 0];
 
 figure(728);clf
 plot(t,y)
@@ -208,6 +213,8 @@ plot(f.diffusionFitResult.x,f.diffusionFitResult.yfit,...
 residuals = f.diffusionFitResult.yfit - f.diffusionFitResult.ydata(:);
 plot(f.diffusionFitResult.x,(residuals*10 - 0.02),'o','MarkerEdgeColor','red')
 legend('Data points','Fitted curve','Location','northwest')
+xlabel('Time (s)')
+ylabel('Concentration (M)')
 hold off
 
 
@@ -227,9 +234,14 @@ save(f.dateString,"f")
 
 obj = labarchivesCallObj('notebook','Matt Lab Notebook',...
     'folder','Experiments',...
-    'page','2024-06-24 Measurement of Diffusion Coefficient of CO2 in 50I50P');
+    'page','2024-08-02 Measurement of Diffusion Coefficient of CO2 in pure EMIM NTf2');
 figure(3)
 obj = obj.updateFigureAttachment;
 figure(4)
 obj = obj.updateFigureAttachment('caption',...
     "D = "+fobj.D+" um^2/s,C = "+fobj.C+" M,dx = "+fobj.dx+" um");
+
+%%
+this_file_name = 'diffusion_fitting.m';
+new_file_name = 'your_date_string_here.m';
+copyfile("diffusion_fitting.m","/Users/matthewliberatore/Desktop/")
