@@ -63,7 +63,12 @@ classdef FTIRexperiment
         % % % % % ADD A METHOD TO FIND/PLOT DIFFERENCE BETWEEN CO2 PEAK AND REAL
         % SPECTRA
         % methods that require a fitted spectra set
-        function concs = concOverTime(obj)
+        function concs = concOverTime(obj,varargin)
+            if numel(varargin) >= 1
+                epsilon = varargin{1};
+            else
+                epsilon = 1050;
+            end
             if isempty(obj.fittedSpectra)
                 error('You do not have any fitted spectra. Fit the gas lines out first.')
                 return
@@ -76,7 +81,9 @@ classdef FTIRexperiment
                     temp.center,temp.w_g,temp.w_l,temp.a1,temp.a2,0,0,0);
                 OD(ii) = max(fcn);
             end
-            concs = OD./(1000*obj.pathLength*1e-4);
+            % molar absorptivity in units of M^-1 cm^-1
+            % converts path length to centimeters
+            concs = OD./(epsilon*obj.pathLength*1e-4);
         end
         function obj = getFinalConc(obj)
             if isstruct(obj.finalSpectrum)

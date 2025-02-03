@@ -38,28 +38,33 @@ if ~exist('t0','var')
 end
 
 if isscalar(t)
-%     u = zeros(1,numel(r));
-%     for ii = 1:nmax
-%         u = u + c0(ii).*besselj(0,j0(ii)/A.*r).*exp(-(j0(ii)/A)^2*D.*t);
-%     end
-%     u = (C-u).*exp(-r.^2/(2*sigma^2)).*r*...
-%         (-1/(sigma^2*(exp(-rlim^2/(2*sigma^2)) - 1)));
-%     out = trapz(r,u);
       error("Time axis parameter t must be a vector, not a scalar.")
 else
     [X,Y] = meshgrid(x,y);
-    mask = ones(size(X));
-    mask(X.^2+Y.^2 > rlim.^2) = 0;
-    norm = trapz(y,trapz(x,exp(-((X-dx).^2+(Y-dy).^2)/(2*sigma^2)).*mask,1));
+    % radius mask
+    radius_mask = ones(size(X));
+    radius_mask(X.^2 + Y.^2 > A^2) = 0;
+    % pinhole mask
+    pinhole_mask = ones(size(X));
+    pinhole_mask((X-dx).^2 + (Y-dy).^2 > rlim^2) = 0;
+    % gaussian beam
+    gaussian_beam = exp(-((X-dx).^2+(Y-dy).^2)/(2*sigma^2));
+    
+    full_disk = C*ones(size(X)).*radius_mask.*pinhole_mask.*gaussian_beam;
+    norm = trapz(y,trapz(x,full_disk,2),1);
     clear X Y
     
-    [X,Y,T] = ndgrid(x,y,t+t0);
+    [X,Y,T] = ndgrid(x,y,t-t0);
     u = zeros(numel(x),numel(y),numel(t));
     for ii = 1:nmax
         u = u + c0(ii).*besselj(0,j0(ii)/A.*sqrt(X.^2+Y.^2)).*exp(-(j0(ii)/A)^2*D.*T);
     end
-    u = (C-u).*exp(-((X-dx).^2+(Y-dy).^2)/(2*sigma^2))/norm;
-    u = u.*mask;
-    out = squeeze(trapz(y,trapz(x,u,1),2));
+    u = (C-u).*radius_mask.*pinhole_mask.*gaussian_beam;
+    out = squeeze(trapz(y,trapz(x,u,1),2))*C/norm;
+    for ii = 1:numel(out)
+       if isnan(out(ii)) || out(ii) < 0
+           out(ii) = 0;
+       end
+    end
 end
 end

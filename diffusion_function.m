@@ -1,30 +1,17 @@
 classdef (Abstract) diffusion_function
     
-    
-    properties
-        %
-        %  Things that can't be fit parameters
-        %
-        
-        %time axis properties
-        %dt;
-        %n_t;
-        %n_zp;
-        %n_under = 0;
-        
-        t;
-        
-        %system properties
+    properties (Abstract)
+        t; % time axis
         gel_radius;
-        beam_size;
+        beam_size; % standard deviation of the beam
+    end
+    properties
         
         dataMatrix;
         
         % fit parameters
-        %tolfun relates to the squared residual in the error
-        %tolx relates to the displacement in your parameters
-        tolfun = 1e-6;%1e-17?
-        tolx = 1e-6;%1e-10?
+        tolfun = 1e-6;%1e-17? %tolfun relates to the squared residual in the error
+        tolx = 1e-6;%1e-10? %tolx relates to the displacement in your parameters
         maxfun = 1e3; %maximum number of function evaluations
         
         %container for fit parameters, these are the ones actually used for fitting
@@ -33,10 +20,6 @@ classdef (Abstract) diffusion_function
         p0; %starting point (vector)
         %weightMatrix; %optional for _w functions
         
-        %
-        % Things that might be fit parameters
-        %
-
         %
         %  Output
         %
@@ -56,7 +39,7 @@ classdef (Abstract) diffusion_function
     
     methods (Abstract)
         calcCurve;
-        fitFunction;
+        getFunctionHandle;
     end
     methods
         function obj = diffusion_function(options)
@@ -75,7 +58,7 @@ classdef (Abstract) diffusion_function
                 obj.p0 = obj.freeFitParamInitialValues;
                 obj.lb = obj.freeFitParamLowerBounds;
                 obj.ub = obj.freeFitParamUpperBounds;
-                             
+                
             end
         end
         
@@ -183,6 +166,44 @@ classdef (Abstract) diffusion_function
                     end
                 end
             end
+        end
+        function obj = fitFunction(obj)
+            
+            %set up options and type
+            sp = obj.freeFitParamInitialValues;
+            opts = fitoptions('Method','NonlinearLeastSquares',...
+                'Lower',obj.lb,'Upper',obj.ub,'StartPoint',sp,...
+                'Display','Iter');
+            fh = getFunctionHandle(obj);
+            ft = fittype(fh,'independent',{'t'},'dependent','absorbance',...
+                'coefficients',obj.freeFitParamNames,'options',opts);
+            
+            %set up structure for storing output
+            out = struct('x',[],'ydata',[],'yfit',[],'res',[],...
+                'fobj',[],'G',[],'O',[]);
+            
+            tic
+            
+            %do the fit
+            [fobj,G,O] = fit(obj.t,y',ft);
+            
+            toc
+            
+            %get results
+            yfit = fobj(obj.t);
+            out.x = obj.t;
+            out.ydata = y;
+            out.yfit = yfit;
+            out.res = y - yfit;
+            out.fobj = fobj;
+            out.G = G;
+            out.O = O;
+            
+            if out.O.exitflag < 1
+                warning('Curve fit did not converge!!! Results might not be trustworthy.');
+            end
+            
+            % obj.pfit = 
         end
         function obj = globalFit(obj)%dataMatrix,w1,w3,p_array,gfstruct,lb,ub)
             
@@ -328,7 +349,7 @@ classdef (Abstract) diffusion_function
             chi2 = sum(sum(sum((obj.dataMatrix(ind)-obj.simMatrix(ind)).^2)));
             
         end
-       function chi2 = err_fun_w(obj,p)
+        function chi2 = err_fun_w(obj,p)
             
             obj = obj.calcCurve(p);
             chi2 = sum(sum(sum(((obj.dataMatrix-obj.simMatrix).^2).*obj.weightMatrix)));
@@ -342,7 +363,7 @@ classdef (Abstract) diffusion_function
         end
         function out = residuals(obj,p)
             if nargin>1
-                 obj = obj.calcCurve(p);
+                obj = obj.calcCurve(p);
             end
             out = obj.dataMatrix-obj.simMatrix;
         end

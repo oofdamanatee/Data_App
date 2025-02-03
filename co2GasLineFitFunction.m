@@ -9,7 +9,7 @@ end
 
 anh = 12;
 
-gl = interp1(gasLinesFreq,gasLines,w(:));
+gl = interp1(gasLinesFreq,gasLines,w(:),'pchip');
 
 dw = w(2)-w(1);
 if dw < 0 

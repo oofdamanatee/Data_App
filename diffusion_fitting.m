@@ -4,10 +4,10 @@
 cd ~  % This is here because sometimes MATLAB gets confused 
 % finding the Isilon folder so you have to reset the current folder to
 % somewhere on the disk first.
-spectra_range = [2:77];
-[data1,freq] = LoadSpectra(...
-    '/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-08-02',...
-    "ML_20240802_2_",spectra_range);
+spectra_range = [1:205];
+cd('/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2025/2025-01-31')
+[data1,freq] = LoadSpectra('/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2025/2025-01-31',...
+    '25EMIMNTF2inPEGDA_20250131_',spectra_range);
 freq = freq(:,1);
 
 if freq(2) - freq(1) > 0
@@ -15,31 +15,33 @@ if freq(2) - freq(1) > 0
 end
 % [data1,freq] = LoadSpectra();
 
+% Subtract to the initial spectrum
+sub_data = data1 - data1(:,1);
+
 % INITIALIZE OBJECT
-f = FTIRexperiment(data1,freq,0.08,12,1550,120,"Pure EMIM NTf2","2024-08-02","Matt");
-% f = f.timeAxis;
-f = f.timeAxis(...
-    '/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/2024-08-02',...
-    "ML_20240802_2_",spectra_range);
-% f = f.timeAxis;
+f = FTIRexperiment(sub_data,freq,0.08,12,2000,120,"25% EMIM NTF2 in PEGDA","2025-01-31","Matt");
+f = f.timeAxis('/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2025/2025-01-31',...
+    '25EMIMNTF2inPEGDA_20250131_',spectra_range);
+
+fprintf("Successfully imported " + size(f.data,2) + " spectra.\n")
 
 clear spectra_range
 %% make initial guesses
 % have the user select which spectrum to guess from
-ii = 60;
+ii = 200;
 
 % set the fit range
 range1 = [2290 2390];
 
 % set starting point using values from the user
-center = 2342.5;
+center = 2338.5;
 wg = 1.7; 
 wl = 1.7;
-a1 = 2.7;  % main peak height
+a1 = 1.7;  % main peak height
 a2 = 0.07; % expected Boltzmann factor for bend
-a3 = 0.02; % gas lines
-c0 = 1.18;
-c1 = 5.5e-5; % baseline slope
+a3 = 0.025; % gas lines
+c0 = 0.0008;
+c1 = 0; % baseline slope
 
 %fit function requires fliipped inputs
 freq = flip(f.freqAxis);
@@ -57,7 +59,7 @@ res = ydata-yfit;
 sse = sum(res.^2);
 
 figure(1);clf
-plot(x,ydata,'o',x,yfit,x,res+1,'r-o')
+plot(x,ydata,'o',x,yfit,x,res-0.1,'r-o')
 %app.UIAxes3.Title = (sprintf('Initial guess SSE = %f',sse));
 %% do the gas line fit
 T = tic; %time the fitting for later display
@@ -73,7 +75,7 @@ figure(2);clf
 for ii = iis
     plot(f.fittedSpectra(ii).x,f.fittedSpectra(ii).ydata,'o',...
         f.fittedSpectra(ii).x,f.fittedSpectra(ii).yfit,...
-        f.fittedSpectra(ii).x,f.fittedSpectra(ii).res + 1,'ro')
+        f.fittedSpectra(ii).x,f.fittedSpectra(ii).res-0.1,'ro')
     hold on
 end
 hold off
@@ -153,14 +155,14 @@ rlim = 350;
 sigma = 704;
 dx = 0;
 dy = 0;
-sp = [200 0.3 0]; % put guess here
-ub = [1e5 1e3 0.5*f.radius];
-lb = [0 0 0];
+sp = [286 0.15 481 -345]; % put guess here
+ub = [1e5 1e3 0.5*f.radius 1e5];
+lb = [0 0 0 -1e5];
 
 figure(728);clf
 plot(t,y)
 hold on
-plot(t,diffusion_moving_beam(t,sp(1),f.radius,sp(2),nmax,sigma,sp(3),dy,"rlim",rlim))
+plot(t,diffusion_moving_beam(t,sp(1),f.radius,sp(2),nmax,sigma,sp(3),dy,"rlim",rlim,"t0",sp(4)))
 
 
 %% Actually do the fit
@@ -170,10 +172,10 @@ opts = fitoptions('Method','NonlinearLeastSquares',...
     'Lower',lb,'Upper',ub,'StartPoint',sp,...
     'Display','Iter');
 
-ft = fittype(@(D,C,dx,t) diffusion_moving_beam(t,D,A,C,nmax,sigma,dx,dy,"rlim",rlim),...
+ft = fittype(@(D,C,dx,t0,t) diffusion_moving_beam(t,D,A,C,nmax,sigma,dx,dy,"rlim",rlim,"t0",t0),...
     'independent',{'t'},...
     'dependent','absorbance',...
-    'coefficients',{'D','C','dx'},...
+    'coefficients',{'D','C','dx','t0'},...
     'options',opts);
 
 %set up structure for storing output
@@ -229,19 +231,29 @@ f.diffusionFitResult.fobj
 
 %% Update lab notebook with results
 f.fitMethod = 'diffusion_moving_beam.m';
-cd("/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2024/"+f.dateString);
+cd("/Volumes/CHEM-SGR/sgr-ftir.chem.pitt.edu/2025/"+f.dateString);
 save(f.dateString,"f")
 
 obj = labarchivesCallObj('notebook','Matt Lab Notebook',...
     'folder','Experiments',...
-    'page','2024-08-02 Measurement of Diffusion Coefficient of CO2 in pure EMIM NTf2');
+    'page','2025-01-30 Measurement of Diffusion Coefficient of CO2 in PMIM NTF2');
 figure(3)
 obj = obj.updateFigureAttachment;
 figure(4)
-obj = obj.updateFigureAttachment('caption',...
-    "D = "+fobj.D+" um^2/s,C = "+fobj.C+" M,dx = "+fobj.dx+" um");
+caption = "";
+coeffs = coeffnames(f.diffusionFitResult.fobj);
+units = ["um^2/s" "M" "um" "s"];
+if numel(units) ~= numel(coeffs)
+    error("Cannot match all fitting parameters with a unit.")
+end
+for ii = 1:numel(coeffs)
+   std_devs{ii} = (ci(2,ii) - ci(1,ii))/4;
+   caption = caption + coeffs{ii} + " = " + f.diffusionFitResult.fobj.(coeffs{ii})...
+       + " ± " + std_devs{ii} + " " + units(ii) + ", ";
+end
+D_std = (ci(2,1) - ci(1,1))/4;
+C_std = (ci(2,2) - ci(1,2))/4;
+dx_std = (ci(2,3) - ci(1,3))/4;
+obj = obj.updateFigureAttachment('caption',caption);
 
-%%
-this_file_name = 'diffusion_fitting.m';
-new_file_name = 'your_date_string_here.m';
-copyfile("diffusion_fitting.m","/Users/matthewliberatore/Desktop/")
+%% Automatically save this script to lab notebook too
