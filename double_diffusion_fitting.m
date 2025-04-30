@@ -11,7 +11,7 @@
 % ---- IMPORTANT!!! Input the correct data right from the start. This will put
 % all the data in the right place. If the date is wrong, it could overwrite
 % previous analysis.
-date_of_experiment = "2025-02-26";
+date_of_experiment = "2025-02-25";
 % ----
 year_of_experiment = year(datetime(date_of_experiment));
 
@@ -29,15 +29,15 @@ load(date_of_experiment + "_single_diffusion_fitting_params.mat")
 t = f.timePts;
 y = f.concOverTime;
 A = f.radius;
-nmax = double_diffusion_fitting_params.nmax;
-rlim = double_diffusion_fitting_params.rlim;
-sigma = double_diffusion_fitting_params.sigma;
+nmax = single_diffusion_fitting_params.nmax;
+rlim = single_diffusion_fitting_params.rlim;
+sigma = single_diffusion_fitting_params.sigma;
 dy = 0;
-dx = double_diffusion_fitting_params.dx;
+dx = single_diffusion_fitting_params.dx;
 
 % ---- User input starting values
 %     D1  D2  C1    C2     t0
-sp = [2   2   0.1225 0.1225 -0]; % put guess here
+sp = [7   7   0.07 0.08 -0]; % put guess here
 ub = [1e5 1e5 1e3 1e3 max(t)];
 lb = [0 0 0 0 -max(t)];
 % ----
@@ -122,12 +122,6 @@ ci = confint(f.diffusionFitResult.fobj);
 f.diffusionFitResult.fobj
 %% Save the data
 
-% ---- PUT IN THE CORRECT NOTEBOOK PAGE TITLE ---
-lab_notebook = 'Matt Lab Notebook';
-folder = 'Experiments';
-page_title = '2025-02-26 Diffusion of CO2 in PMNTF2 EMIM at 75 C';
-% ----
-
 double_diffusion_fitting_params.sp = sp;
 double_diffusion_fitting_params.ub = ub;
 double_diffusion_fitting_params.lb = lb;
@@ -139,14 +133,22 @@ double_diffusion_fitting_params.sigma = sigma;
 f.fitMethod = 'two_step_diffusion.m';
 
 cd(data_path);
-save(date + "_double_diffusion_fitting.mat","f")
-save(date + "_double_diffusion_fitting_params.mat",'double_diffusion_fitting_params')
+save(date_of_experiment + "_double_diffusion_fitting.mat","f")
+save(date_of_experiment + "_double_diffusion_fitting_params.mat",'double_diffusion_fitting_params')
+
+%% Update lab notebook
+
+% ---- PUT IN THE CORRECT NOTEBOOK PAGE TITLE ---
+lab_notebook = 'Matt Lab Notebook';
+folder = 'Experiments';
+page_title = '2025-02-26 Diffusion of CO2 in PMNTF2 EMIM at 75 C';
+% ----
 
 obj = labarchivesCallObj('notebook',lab_notebook,...
     'folder',folder,...
     'page',page_title);
 figure(14)
-caption = "";
+caption = "Double diffusion coefficient fitting: ";
 coeffs = coeffnames(f.diffusionFitResult.fobj);
 units = ["um^2/s" "um^2/s" "M" "M" "s"];
 if numel(units) ~= numel(coeffs)

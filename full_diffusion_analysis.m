@@ -8,7 +8,7 @@
 % ---- IMPORTANT!!! Input the correct data right from the start. This will put
 % all the data in the right place. If the date is wrong, it could overwrite
 % previous analysis.
-date_of_experiment = "2025-02-26";
+date_of_experiment = "2025-04-08";
 % ----
 year_of_experiment = year(datetime(date_of_experiment));
 
@@ -22,11 +22,11 @@ data_path = isilon_path + "sgr-ftir.chem.pitt.edu/" + year_of_experiment + "/" +
 %% Load the image from Isilon
 
 % ---- path to the image within CHEM-SGR (end with a slash) ----
-image_path = "leica_stereoscope/Matt_Kallol/20250228/";
+image_path = "leica_stereoscope/Matt_Kallol/20250407/";
 % ----
 
 % ---- name of the image file (use the .tif one) ----
-image_filename = 'PMNTF2EMIM_20250226.tif';
+image_filename = 'PMNTF2EMIM_20250331_pre-diffusion.tif';
 % ----
 
 cd(isilon_path + image_path)
@@ -98,7 +98,7 @@ b.EdgeColor = 'white';
 
 % ---- put in the length of scale bar (in mm) manually ----
 %              --------
-scale_bar_mm = 0.18678;
+scale_bar_mm = 0.20361;
 %              --------
 
 % ---- change these pixel bounds so that ONLY the scale bar is included.
@@ -145,18 +145,18 @@ save(date_of_experiment + "_image_processing_data.mat",'image_processing')
 %% Load in the spectra
 cd ~
 % --- the indicies of the spectra you wish to use ----
-spectra_range = [1:469]; 
+spectra_range = [1:149]; 
 % ----
 
 % --- the spectra file prefix ---
-file_prefix = 'PMNTF2EMIM_20250226_75C_';
+file_prefix = '50EMIMNTF2inPEGDA_20250408_room_';
 % ----
 
 % --- experimental parameters ---
 volume = 0;  % in microliters
 spacer_size = 25;  % in microns
 gel_radius = radius_mm*1000;  % as previously calculated, but can be overridden
-time_delay = 30;  % between spectra, in seconds
+time_delay = 300;  % between spectra, in seconds
 sample_name = "PMNTF2 EMIM";
 your_name = "Matt";
 % ---
@@ -180,7 +180,7 @@ f = f.timeAxis(data_path,file_prefix,spectra_range);
 fprintf("Successfully imported " + size(f.data,2) + " spectra.\n")
 %% Guesses for FTIR peak fitting, by eye
 % ---- Which spectrum will you match to? Usually the last one is good.
-trial_spectrum = 469;
+trial_spectrum = 149;
 % ----
 
 % set the fit range. Usually doesn't need to be changed
@@ -189,11 +189,11 @@ range1 = [2290 2390];
 % ---- User-input starting point values ----
 sp.center = 2340;
 sp.wg = 1.7; 
-sp.wl = 2;
-sp.a1 = 3.6;  % main peak height
-sp.a2 = 0.13; % expected Boltzmann factor for bend
-sp.a3 = 0.35; % gas lines
-sp.c0 = 0.03;
+sp.wl = 1.7;
+sp.a1 = 1.35;  % main peak height
+sp.a2 = 0.12; % expected Boltzmann factor for bend
+sp.a3 = 0.02; % gas lines
+sp.c0 = 0.01;
 sp.c1 = 0; % baseline slope
 % ----
 
@@ -245,7 +245,7 @@ if tl==0
 end
 review = [review;"Fitting took "+stop+" seconds."];
 review
-%% Plotting the uptake curve for viewing
+ %% Plotting the uptake curve for viewing
 figure(3);clf
 
 % number of spectra to show
@@ -309,7 +309,7 @@ dy = 0;
 % ---- User input starting values
 dx = displacement_mm*1000;  % from the image analysis. can be overridden
 %      D    C   t0
-sp = [2 0.245 -0]; % put guess here
+sp = [0.15  .8  -0]; % put guess here
 ub = [1e5 1e3 max(t)];
 lb = [0 0 -max(t)];
 % ----
@@ -383,10 +383,6 @@ others = ["95% Confidence Interval is "+ci(1)+" to "+ci(2)+".";...
 f.diffusionFitResult.fobj
 %% Save the data
 
-% ---- PUT IN THE CORRECT NOTEBOOK PAGE TITLE ---
-page_title = '2025-02-26 Diffusion of CO2 in PMNTF2 EMIM at 75 C';
-% ----
-
 single_diffusion_fitting_params.sp = sp;
 single_diffusion_fitting_params.ub = ub;
 single_diffusion_fitting_params.lb = lb;
@@ -394,16 +390,23 @@ single_diffusion_fitting_params.dx = dx;
 single_diffusion_fitting_params.nmax = nmax;
 single_diffusion_fitting_params.rlim = rlim;
 single_diffusion_fitting_params.sigma = sigma;
-cd(data_path)
 save(date_of_experiment + "_single_diffusion_fitting_params.mat",'single_diffusion_fitting_params')
 
-% Update lab notebook with results
 f.fitMethod = 'diffusion_moving_beam.m';
 cd(data_path);
+save(date_of_experiment + "_single_diffusion_fitting_params.mat",'single_diffusion_fitting_params')
 save(f.dateString + "_single_diffusion_fitting","f")
 
-obj = labarchivesCallObj('notebook','Matt Lab Notebook',...
-    'folder','Experiments',...
+%% Update lab notebook with results
+
+% ---- PUT IN THE CORRECT NOTEBOOK PAGE TITLE ---
+notebook = 'Matt Lab Notebook';
+folder = 'Experiments';
+page_title = '2025-03-14 Diffusion of CO2 in PMNTF2 EMIM at 45 C';
+% ----
+
+obj = labarchivesCallObj('notebook',notebook,...
+    'folder',folder,...
     'page',page_title);
 % microscope photo
 figure(11)
