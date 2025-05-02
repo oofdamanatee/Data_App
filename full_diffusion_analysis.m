@@ -8,7 +8,7 @@
 % ---- IMPORTANT!!! Input the correct data right from the start. This will put
 % all the data in the right place. If the date is wrong, it could overwrite
 % previous analysis.
-date_of_experiment = "2025-04-08";
+date_of_experiment = "2025-05-01";
 % ----
 year_of_experiment = year(datetime(date_of_experiment));
 
@@ -145,11 +145,11 @@ save(date_of_experiment + "_image_processing_data.mat",'image_processing')
 %% Load in the spectra
 cd ~
 % --- the indicies of the spectra you wish to use ----
-spectra_range = [1:149]; 
+spectra_range = [1:56]; 
 % ----
 
 % --- the spectra file prefix ---
-file_prefix = '50EMIMNTF2inPEGDA_20250408_room_';
+file_prefix = '75EMIMNTF2inPEGDA_20250501_room_';
 % ----
 
 % --- experimental parameters ---
@@ -180,20 +180,20 @@ f = f.timeAxis(data_path,file_prefix,spectra_range);
 fprintf("Successfully imported " + size(f.data,2) + " spectra.\n")
 %% Guesses for FTIR peak fitting, by eye
 % ---- Which spectrum will you match to? Usually the last one is good.
-trial_spectrum = 149;
+trial_spectrum = 56;
 % ----
 
 % set the fit range. Usually doesn't need to be changed
 range1 = [2290 2390];
 
 % ---- User-input starting point values ----
-sp.center = 2340;
+sp.center = 2341.5;
 sp.wg = 1.7; 
 sp.wl = 1.7;
-sp.a1 = 1.35;  % main peak height
-sp.a2 = 0.12; % expected Boltzmann factor for bend
-sp.a3 = 0.02; % gas lines
-sp.c0 = 0.01;
+sp.a1 = 1.8;  % main peak height
+sp.a2 = 0.07; % expected Boltzmann factor for bend
+sp.a3 = 0.0; % gas lines
+sp.c0 = -0.007;
 sp.c1 = 0; % baseline slope
 % ----
 
