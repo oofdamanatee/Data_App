@@ -8,7 +8,7 @@
 % ---- IMPORTANT!!! Input the correct data right from the start. This will put
 % all the data in the right place. If the date is wrong, it could overwrite
 % previous analysis.
-date_of_experiment = "2025-05-01";
+date_of_experiment = "2025-05-12";
 % ----
 year_of_experiment = year(datetime(date_of_experiment));
 
@@ -17,124 +17,53 @@ year_of_experiment = year(datetime(date_of_experiment));
 isilon_path = "/Volumes/CHEM-SGR/";
 % ----
 data_path = isilon_path + "sgr-ftir.chem.pitt.edu/" + year_of_experiment + "/" + date_of_experiment;
+
+try
+    cd(isilon_path)
+catch
+    warning("An error ocurred accessing the data directory. Make sure you are connected to Isilon.")
+end
 %% Step 1: process the microscope image
 
 %% Load the image from Isilon
 
 % ---- path to the image within CHEM-SGR (end with a slash) ----
-image_path = "leica_stereoscope/Matt_Kallol/20250407/";
+image_path = "sgr-kiralux-camera.chem.pitt.edu/2025-05-12/";
 % ----
 
 % ---- name of the image file (use the .tif one) ----
-image_filename = 'PMNTF2EMIM_20250331_pre-diffusion.tif';
+image_filename = "75EMIMNTF2inPEGDA_20250512_pre-diffusion_roomtemp.tif";
 % ----
-
-cd(isilon_path + image_path)
-I = imread(image_filename);
-I = I(:,:,1:3);
-I = rgb2gray(I);
 %% Process the image
-figure(11);clf
-imshow(I)
-set(gcf,'Position',[813   332   868   615])
-hold on
 
-% ---- When selecting edges, the points you select must be fairly evenly
-% spaced. I recommend selecting four points first, one in each cardinal
-% direction, then selecting four more points, halfway between each pair of
-% cardinal points. These 8 points typically suffice from my testing. ----
+% Get the radius from the image
+% ------------
+[radius_pixels,displacement_pixels,other] = radius_from_image(isilon_path+image_path+image_filename,"image scale",25,"dx definition","from center","radius definition","centroid");
+% ------------
 
-% select gel edge
-fprintf("Now selecting gel edge...Press enter to continue.\n")
-guide = annotation('textbox',[0.2 0 0.1 0.1],'String',"Select gel edge. Press enter to continue.");
-guide.FontSize = 18;
-guide.Color = 'white';
-guide.EdgeColor = 'white';
-gel_edge = ginput;
-scatter(gel_edge(:,1),gel_edge(:,2),'filled','MarkerFaceColor','green')
-gel_center = [mean(gel_edge(:,1)) mean(gel_edge(:,2))];
-scatter(gel_center(1),gel_center(2),100,'filled','MarkerFaceColor','red')
-delete(findall(figure(11),'type','annotation'))
-% select pinhole edge
-fprintf("Now selecting pinhole edge...Press enter to continue.\n")
-guide = annotation('textbox',[0.2 0 0.1 0.1],'String',"Select pinhole edge. Press enter to continue.");
-guide.FontSize = 18;
-guide.Color = 'white';
-guide.EdgeColor = 'white';
-pinhole_edge = ginput;
-scatter(pinhole_edge(:,1),pinhole_edge(:,2),'filled','MarkerFaceColor','cyan')
-pinhole_center = [mean(pinhole_edge(:,1)) mean(pinhole_edge(:,2))];
-scatter(pinhole_center(1),pinhole_center(2),100,'filled','MarkerFaceColor','red')
-delete(findall(figure(11),'type','annotation'))
+% Convert the radius to distance
+% ------------
 
-% Calculate values
-delete(findall(figure(11),'type','annotation'))
-% calculate radius
-radii = zeros(size(gel_edge,1),1);
-for ii = 1:size(gel_edge,1)
-    delta_x = gel_edge(ii,1) - gel_center(1);
-    delta_y = gel_edge(ii,2) - gel_center(2);
-    radii(ii) = sqrt(delta_x^2 + delta_y^2);
-end
-radius_pixels = mean(radii);
-figure(11)
-plot([gel_center(1) gel_center(1)-radius_pixels],[gel_center(2) gel_center(2)],'LineWidth',2,'Color','green')
-a = annotation('textbox',[0.1 0.8 0.1 0.1],'String',"r = " + radius_pixels + " pixels");
-a.FontSize = 16;
-a.Color = 'green';
-a.EdgeColor = 'white';
+% ------------
+%% Get the scaling
 
-% find pinhole displcement
-delta_x = pinhole_center(1) - gel_center(1);
-delta_y = pinhole_center(2) - gel_center(2);
-displacement_pixels = sqrt(delta_x^2 + delta_y^2);
-figure(11)
-plot([gel_center(1) pinhole_center(1)],[gel_center(2) pinhole_center(2)],'LineWidth',2','Color','cyan')
-b = annotation('textbox',[0.1 0.75 0.1 0.1],'String',"dx = " + displacement_pixels + " pixels");
-b.FontSize = 16;
-b.Color = 'cyan';
-b.EdgeColor = 'white';
-%% Get the scale bar
+units = "um";
+path_to_ref = isilon_path + "sgr-kiralux-camera.chem.pitt.edu/2025-05-09/";
+um_per_pixel = get_distance_per_pixel(path_to_ref,"scaled_reticle01.tif",[1476 1939;824 828],2000,units,"image scale",10);
 
-% ---- put in the length of scale bar (in mm) manually ----
-%              --------
-scale_bar_mm = 0.20361;
-%              --------
-
-% ---- change these pixel bounds so that ONLY the scale bar is included.
-% not even the number. it will be a VERY small figure, but necessary. ----
-vertical_region = 1479:1482;
-horizontal_region = 1940:2000;
-% ----
-
-figure(2);clf
-sub_image = I(vertical_region,horizontal_region);
-imshow(sub_image)
-set(gcf,'Position',[1   490   681   457])
-threshold = 180;
-scale_bar = sub_image < threshold;
-scale_bar = mean(scale_bar,1);
-scale_bar_pixels = numel(scale_bar(scale_bar > 0));
-mm_per_pixel = scale_bar_mm/scale_bar_pixels;
 %% Calculate the radius
-figure(11)
-radius_mm = radius_pixels * mm_per_pixel;
-a.String = a.String + ", " + radius_mm + " mm";
-displacement_mm = displacement_pixels * mm_per_pixel;
-b.String = b.String + ", " + displacement_mm + " mm";
+radius_mm = radius_pixels*um_per_pixel/1000;
+displacement_mm = displacement_pixels*um_per_pixel/1000;
+fprintf("r = %4f mm; dx = %4f mm\n",radius_mm,displacement_mm)
 %% Save the data
 % make a neat structure
 image_processing.path = image_path + image_filename;
-image_processing.gel_center = gel_center;
-image_processing.gel_edge = gel_edge;
-image_processing.pinhole_center = pinhole_center;
-image_processing.pinhole_edge = pinhole_edge;
 image_processing.radius_mm = radius_mm;
 image_processing.displacement_mm = displacement_mm;
-image_processing.mm_per_pixel = mm_per_pixel;
-image_processing.scale_bar_mm = scale_bar_mm;
-image_processing.scale_bar_vertical_region = vertical_region;
-image_processing.scale_bar_horizontal_region = horizontal_region;
+image_processing.length_per_pixel = um_per_pixel;
+image_processing.units = units;
+image_processing.radius_definition = "centroid";
+image_processing.other_data = other;
 
 cd(data_path)
 save(date_of_experiment + "_image_processing_data.mat",'image_processing')
@@ -145,19 +74,19 @@ save(date_of_experiment + "_image_processing_data.mat",'image_processing')
 %% Load in the spectra
 cd ~
 % --- the indicies of the spectra you wish to use ----
-spectra_range = [1:56]; 
+spectra_range = [1:115]; 
 % ----
 
 % --- the spectra file prefix ---
-file_prefix = '75EMIMNTF2inPEGDA_20250501_room_';
+file_prefix = '75EMIMNTF2inPEGDA_20250512_room_';
 % ----
 
 % --- experimental parameters ---
-volume = 0;  % in microliters
-spacer_size = 25;  % in microns
+volume = 0.07;  % in microliters
+spacer_size = 12;  % in microns
 gel_radius = radius_mm*1000;  % as previously calculated, but can be overridden
-time_delay = 300;  % between spectra, in seconds
-sample_name = "PMNTF2 EMIM";
+time_delay = 60;  % between spectra, in seconds
+sample_name = "75% EMIM NTF2 in PEGDA";
 your_name = "Matt";
 % ---
 
@@ -180,20 +109,20 @@ f = f.timeAxis(data_path,file_prefix,spectra_range);
 fprintf("Successfully imported " + size(f.data,2) + " spectra.\n")
 %% Guesses for FTIR peak fitting, by eye
 % ---- Which spectrum will you match to? Usually the last one is good.
-trial_spectrum = 56;
+trial_spectrum = 110;
 % ----
 
 % set the fit range. Usually doesn't need to be changed
 range1 = [2290 2390];
 
 % ---- User-input starting point values ----
-sp.center = 2341.5;
+sp.center = 2341.25;
 sp.wg = 1.7; 
 sp.wl = 1.7;
-sp.a1 = 1.8;  % main peak height
+sp.a1 = 2.25;  % main peak height
 sp.a2 = 0.07; % expected Boltzmann factor for bend
 sp.a3 = 0.0; % gas lines
-sp.c0 = -0.007;
+sp.c0 = 0.02;
 sp.c1 = 0; % baseline slope
 % ----
 
@@ -298,7 +227,9 @@ save(date_of_experiment + "_FTIR_peak_fitting.mat",'FTIR_peak_fitting_params')
 
 %% Guesses for uptake curve fitting, by eye
 t = f.timePts;
+% t = t(1:80);
 y = f.concOverTime;
+% y = y(1:80);
 A = f.radius;
 nmax = 150;
 rres = 50;
@@ -308,27 +239,36 @@ dy = 0;
 
 % ---- User input starting values
 dx = displacement_mm*1000;  % from the image analysis. can be overridden
-%      D    C   t0
-sp = [0.15  .8  -0]; % put guess here
-ub = [1e5 1e3 max(t)];
-lb = [0 0 -max(t)];
+%     D    C   
+sp = [160  0.244]; % put guess here
+ub = [1e5 1e3];
+lb = [0 0];
 % ----
 
 figure(728);clf
 plot(t,y)
 hold on
-plot(t,diffusion_moving_beam(t,sp(1),f.radius,sp(2),nmax,sigma,dx,dy,"rlim",rlim,"t0",sp(3)))
+ymodel = diffusion_moving_beam(t,sp(1),A,sp(2),nmax,sigma,dx,dy,"rlim",rlim,'dx definition','from center');
+plot(t,ymodel)
+res = y(:) - ymodel(:);
+plot(t,res-0.025,'ro')
+errs(1) = sum((res).^2);
+errs(2) = std(res);
+fprintf("SSE: " + errs(1) + "; Std. res: " + errs(2) + "\n")
 %% Do the uptake curve fitting
 
 %set up options and type
 opts = fitoptions('Method','NonlinearLeastSquares',...
     'Lower',lb,'Upper',ub,'StartPoint',sp,...
-    'Display','Iter');
+    'Display','Iter',...
+    'Weights',ones(size(y))*1/errs(2),...
+    'TolFun',1e-16,...
+    'TolX',1e-16);
 
-ft = fittype(@(D,C,t0,t) diffusion_moving_beam(t,D,A,C,nmax,sigma,dx,dy,"rlim",rlim,"t0",t0),...
+ft = fittype(@(D,C,t) diffusion_moving_beam(t,D,A,C,nmax,sigma,dx,dy,"rlim",rlim,'dx definition','from center'),...
     'independent',{'t'},...
     'dependent','absorbance',...
-    'coefficients',{'D','C','t0'},...
+    'coefficients',{'D','C'},...
     'options',opts);
 
 %set up structure for storing output
@@ -365,8 +305,8 @@ plot(f.diffusionFitResult.x,f.diffusionFitResult.ydata,...
 hold on
 plot(f.diffusionFitResult.x,f.diffusionFitResult.yfit,...
     'red','LineWidth',1.5)
-residuals = f.diffusionFitResult.yfit - f.diffusionFitResult.ydata(:);
-plot(f.diffusionFitResult.x,(residuals*10 - 0.02),'o','MarkerEdgeColor','red')
+residuals = f.diffusionFitResult.ydata(:) - f.diffusionFitResult.yfit(:);
+plot(f.diffusionFitResult.x,(residuals*1 - 0.02),'o','MarkerEdgeColor','red')
 legend('Data points','Fitted curve','Location','northwest')
 xlabel('Time (s)')
 ylabel('Concentration (M)')
@@ -402,15 +342,15 @@ save(f.dateString + "_single_diffusion_fitting","f")
 % ---- PUT IN THE CORRECT NOTEBOOK PAGE TITLE ---
 notebook = 'Matt Lab Notebook';
 folder = 'Experiments';
-page_title = '2025-03-14 Diffusion of CO2 in PMNTF2 EMIM at 45 C';
+page_title = '2025-05-12 Diffusion of CO2 in 75% EMIM NTF2 in PEGDA';
 % ----
 
 obj = labarchivesCallObj('notebook',notebook,...
     'folder',folder,...
     'page',page_title);
 % microscope photo
-figure(11)
-obj = obj.updateFigureAttachment('caption','Microscope photo of the sample annotated with calculated values');
+figure(6)
+obj = obj.updateFigureAttachment('caption','Kiralux camera photo of the sample annotated with calculated values');
 % uptake curve
 figure(3)
 obj = obj.updateFigureAttachment;
@@ -418,7 +358,7 @@ obj = obj.updateFigureAttachment;
 figure(144)
 caption = "Single diffusion coefficient fitting: ";
 coeffs = coeffnames(f.diffusionFitResult.fobj);
-units = ["um^2/s" "M" "s"];
+units = ["um^2/s" "M"];
 if numel(units) ~= numel(coeffs)
     error("Cannot match all fitting parameters with a unit.")
 end

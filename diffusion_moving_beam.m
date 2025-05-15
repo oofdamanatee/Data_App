@@ -25,6 +25,12 @@ while numel(varargin) >= 2
             rlim = val;
         case "t0"
             t0 = val;
+        case "dx definition"
+            if val == "from center" || val == "from edge"
+                dx_def = val;
+            else
+                error("Only value arguments ""from center"" and ""from edge"" can pair with ""dx definition""");
+            end
         otherwise
             error("Invalid name/value pair")
     end
@@ -35,6 +41,13 @@ if ~exist('rlim','var')
 end
 if ~exist('t0','var')
     t0 = 0;
+end
+if ~exist('dx_def','var')
+    dx_def = "from center";
+end
+
+if dx_def == "from edge"
+    dx = A-dx;
 end
 
 if isscalar(t)

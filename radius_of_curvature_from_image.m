@@ -1,10 +1,18 @@
-function [radius_mm, displacement_mm, out_struct] = radius_of_curvature_from_image(filepath, units, varargin)
-if units == "mm"
-    if numel(varargin) ~= 2
-        error("Must provide scale_bar_mm and scale_bar_region if using mm units")
+function [radius_pixels, displacement_pixels, out_struct] = radius_of_curvature_from_image(filepath, varargin)
+
+while numel(varargin) >= 2
+    var = varargin{1};
+    val = varargin{2};
+    switch var
+        case "image scale"
+            scale_factor = val;
+        otherwise
+            error(var + " is an invalid name/value pair keyword.")
     end
-    scale_bar_mm = varargin{1};
-    scale_bar_region = varargin{2};
+    varargin = varargin(3:end);
+end
+if ~exist('scale_factor','var')
+    scale_factor = 1;
 end
 
 slashes = strfind(filepath,"/");
@@ -17,6 +25,7 @@ if numel(size(image)) ~= 2
     I = I(:,:,1:3);
     I = rgb2gray(I);
 end
+I = I*scale_factor;
 figure;
 imshow(I)
 set(gcf,'Position',[813   332   868   615])
@@ -111,23 +120,23 @@ b.FontSize = 16;
 b.Color = 'cyan';
 b.EdgeColor = 'white';
 
-if units == "mm"
-    sub_image = I(scale_bar_region(1,1):scale_bar_region(1,2),scale_bar_region(2,1):scale_bar_region(2,2));
-    threshold = 180;
-    scale_bar = sub_image < threshold;
-    scale_bar = mean(scale_bar,1);
-    scale_bar_pixels = numel(scale_bar(scale_bar > 0));
-    
-    mm_per_pixel = scale_bar_mm/scale_bar_pixels;
-    gcf
-    radius_mm = radius_pixels * mm_per_pixel;
-    a.String = a.String + ", " + radius_mm + " mm";
-    displacement_mm = displacement_pixels * mm_per_pixel;
-    b.String = b.String + ", " + displacement_mm + " mm";
-else
-    radius_mm = radius_pixels;
-    displacement_mm = displacement_pixels;
-end
+% if units == "mm"
+%     sub_image = I(scale_bar_region(1,1):scale_bar_region(1,2),scale_bar_region(2,1):scale_bar_region(2,2));
+%     threshold = 180;
+%     scale_bar = sub_image < threshold;
+%     scale_bar = mean(scale_bar,1);
+%     scale_bar_pixels = numel(scale_bar(scale_bar > 0));
+%     
+%     mm_per_pixel = scale_bar_mm/scale_bar_pixels;
+%     gcf
+%     radius_mm = radius_pixels * mm_per_pixel;
+%     a.String = a.String + ", " + radius_mm + " mm";
+%     displacement_mm = displacement_pixels * mm_per_pixel;
+%     b.String = b.String + ", " + displacement_mm + " mm";
+% else
+%     radius_mm = radius_pixels;
+%     displacement_mm = displacement_pixels;
+% end
 
 % other data output structure
 clear out_struct
@@ -135,6 +144,5 @@ out_struct.gel_edge = gel_edge;
 out_struct.pinhole_edge = pinhole_edge;
 out_struct.gel_center = gel_center;
 out_struct.pinhole_center = pinhole_center;
-out_struct.units = units;
 
 end
