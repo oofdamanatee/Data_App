@@ -43,7 +43,7 @@ if numel(size(image)) ~= 2
     I = rgb2gray(I);
 end
 I = I*scale_factor;
-gel_fig = figure;
+% gel_fig = figure;
 imshow(I)
 set(gcf,'Position',[813   332   868   615])
 hold on

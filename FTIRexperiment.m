@@ -15,6 +15,7 @@ classdef FTIRexperiment
         fittedSpectra struct = []
         fitMethod
         diffusionFitResult struct
+        displacement double = NaN
     end
     methods
         % CONSTRUCTOR METHOD !!!
