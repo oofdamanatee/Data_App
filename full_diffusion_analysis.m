@@ -85,6 +85,7 @@ file_prefix = '75EMIMNTF2inPEGDA_20250512_room_';
 volume = 0.07;  % in microliters
 spacer_size = 12;  % in microns
 gel_radius = radius_mm*1000;  % as previously calculated, but can be overridden
+displacement = displacement_mm*1000;
 time_delay = 60;  % between spectra, in seconds
 sample_name = "75% EMIM NTF2 in PEGDA";
 your_name = "Matt";
@@ -105,24 +106,26 @@ sub_data = data1 - data1(:,1);
 f = FTIRexperiment(sub_data,freq,volume,spacer_size,gel_radius,...
     time_delay,sample_name,date_of_experiment,your_name);
 f = f.timeAxis(data_path,file_prefix,spectra_range);
+f.displacement = displacement;
 
 fprintf("Successfully imported " + size(f.data,2) + " spectra.\n")
 %% Guesses for FTIR peak fitting, by eye
 % ---- Which spectrum will you match to? Usually the last one is good.
-trial_spectrum = 110;
+trial_spectrum = 115;
 % ----
 
 % set the fit range. Usually doesn't need to be changed
 range1 = [2290 2390];
 
+clear sp
 % ---- User-input starting point values ----
-sp.center = 2341.25;
+sp.center = 2341.45;
 sp.wg = 1.7; 
 sp.wl = 1.7;
-sp.a1 = 2.25;  % main peak height
+sp.a1 = 2.3;  % main peak height
 sp.a2 = 0.07; % expected Boltzmann factor for bend
 sp.a3 = 0.0; % gas lines
-sp.c0 = 0.02;
+sp.c0 = 0.021;
 sp.c1 = 0; % baseline slope
 % ----
 
@@ -141,7 +144,7 @@ yfit = co2GasLineFitFunction(x,sp.center,sp.wg,sp.wl,sp.a1,sp.a2,sp.a3,sp.c0,sp.
 res = ydata-yfit;
 sse = sum(res.^2);
 
-figure(1);clf
+figure(182);clf
 plot(x,ydata,'o',x,yfit,x,res-0.1,'r-o')
 %% Do the FTIR peak fit
 T = tic; %time the fitting for later display
@@ -151,7 +154,7 @@ stop = toc(T);
 %selecte 4 evenly placed fits to plot
 n_spectra = size(f.data,2);
 iis = ceil([1 n_spectra/4 n_spectra*3/4 n_spectra]);
-figure(2);clf
+figure(209);clf
 for ii = iis
     plot(f.fittedSpectra(ii).x,f.fittedSpectra(ii).ydata,'o',...
         f.fittedSpectra(ii).x,f.fittedSpectra(ii).yfit,...
@@ -175,7 +178,7 @@ end
 review = [review;"Fitting took "+stop+" seconds."];
 review
  %% Plotting the uptake curve for viewing
-figure(3);clf
+figure(319);clf
 
 % number of spectra to show
 n = size(f.data,2);
@@ -238,9 +241,9 @@ sigma = 704;
 dy = 0;
 
 % ---- User input starting values
-dx = displacement_mm*1000;  % from the image analysis. can be overridden
+dx = f.displacement;  % from the image analysis. can be overridden
 %     D    C   
-sp = [160  0.244]; % put guess here
+sp = [165  0.235]; % put guess here
 ub = [1e5 1e3];
 lb = [0 0];
 % ----
@@ -349,13 +352,19 @@ obj = labarchivesCallObj('notebook',notebook,...
     'folder',folder,...
     'page',page_title);
 % microscope photo
-figure(6)
-obj = obj.updateFigureAttachment('caption','Kiralux camera photo of the sample annotated with calculated values');
+% ----------
+figure(1)
+% ----------
+obj = obj.updateFigureAttachment('caption',"Kiralux camera photo of the sample annotated with calculated values");
 % uptake curve
-figure(3)
+% ----------
+figure(319)
+% ----------
 obj = obj.updateFigureAttachment;
 % single diffusion fitting result
+% ----------
 figure(144)
+% ----------
 caption = "Single diffusion coefficient fitting: ";
 coeffs = coeffnames(f.diffusionFitResult.fobj);
 units = ["um^2/s" "M"];
