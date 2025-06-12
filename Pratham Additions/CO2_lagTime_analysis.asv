@@ -8,7 +8,7 @@
 % ---- IMPORTANT!!! Input the correct data right from the start. This will put
 % all the data in the right place. If the date is wrong, it could overwrite
 % previous analysis.
-date_of_experiment = "2025-06-12";
+date_of_experiment = "2025-06-05";
 % ----
 year_of_experiment = year(datetime(date_of_experiment));
 
@@ -27,11 +27,11 @@ end
 %% Step 1:Load in the spectra
 cd ~
 % --- the indices of the spectra you wish to use ----
-spectra_range = 1:284; 
+spectra_range = 1:340; 
 % ----
 
 % --- the spectra file prefix ---
-file_prefix = 'PA_20250612_Trial4_';
+file_prefix = 'PA_20250605_Trial2_';
 % ----
 
 cd(data_path)
@@ -48,7 +48,7 @@ fprintf("Successfully imported " + size(data1, 2) + " spectra.\n")
 % --- experimental parameters ---
 spacer_size = 12;  % in microns
 flow_rate = 0.5; % in mL/min
-timeZero = datetime('12-Jun-2025 13:38:45'); % According to 24hr clock as hr:min:sec
+timeZero = datetime('05-Jun-2025 15:05:02'); % According to 24hr clock as hr:min:sec
 your_name = "Pratham";
 % ---
 
@@ -71,13 +71,14 @@ title('Maximum Absorbance of CO2 in Empty Brass Cell Over Time')
 xlabel('Time (s)')
 ylabel('Relative Absorbance')
 
+% ------ Annotation box on figure ------
 annotation('textbox', [.6,.2, .3, .3], 'String',{'  Date: ' + date_of_experiment, '  Flow rate (mL/min): '+ string(flow_rate), '  Spacer size (µm): ' + string(spacer_size)}, 'FitBoxToText', 'on')
-
+%n --------
 
 %% Export figure
 ax = gca;
 % ------ Figure Name ------
-exportgraphics(ax, '/Users/oofdamanatee/Downloads/Figure_6.pdf')
+exportgraphics(ax, '/Users/oofdamanatee/Downloads/Figure_3.pdf')
 % ------
 
 %% Functions
