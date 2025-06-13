@@ -57,19 +57,27 @@ times = timeAxis(data_path,file_prefix,spectra_range, timeZero);
 
 % Subtract the initial spectrum (considering spectra after time zero)
 ignored_spectra = numel(spectra_range) - numel(times); % Number of spectra taken before time zero (to be ignored)
-sub_data = data1(:, (1+ignored_spectra):end) - data1(:,(1+ignored_spectra)); % Contains difference spectra
+sub_data = data1(:, (2+ignored_spectra):end) - data1(:,(2+ignored_spectra)); % Contains difference spectra
 
-% Find the maximum absorbance of CO2 for each used spectrum
-abs_CO2 = maxAbsorbance(sub_data, freq);
+
+% Find the integrated absorbance of CO2 for each used spectrum
+abs_CO2 = IntegratedAbsorbance(sub_data, freq);
 
 % Total time taken to reach equilibrium CO2 pressure in brass cell
 lagTime = times(end) / 60; % in minutes
-%%
+%% Plot the Integrated Absorbance
+
+if flow_rate > 2
+    marker = 15;
+else
+    marker = 6;
+end
+
 figure;
-plot(times, abs_CO2, "r.")
-title('Maximum Absorbance of CO2 in Empty Brass Cell Over Time')
+plot(times(2:end), abs_CO2, "r.", MarkerSize= marker)
+title('Integrated absorbance of CO2 in Empty Brass Cell Over Time')
 xlabel('Time (s)')
-ylabel('Relative Absorbance')
+ylabel('Integrated Absorbance')
 
 annotation('textbox', [.6,.2, .3, .3], 'String',{'  Date: ' + date_of_experiment, '  Flow rate (mL/min): '+ string(flow_rate), '  Spacer size (µm): ' + string(spacer_size)}, 'FitBoxToText', 'on')
 
@@ -77,7 +85,7 @@ annotation('textbox', [.6,.2, .3, .3], 'String',{'  Date: ' + date_of_experiment
 %% Export figure
 ax = gca;
 % ------ Figure Name ------
-exportgraphics(ax, '/Users/oofdamanatee/Downloads/Figure_6.pdf')
+exportgraphics(ax, '/Users/oofdamanatee/Downloads/Figure_3.pdf')
 % ------
 
 %% Functions
@@ -114,17 +122,17 @@ function timeArray = timeAxis(varargin)
     %             axis = (0:(size(obj.data,2)-1)).*obj.timeInterval;
 end
 
-% Find max CO2 absorbance for spectra
-function absorbance = maxAbsorbance(spectra, freq_list)
+% Find integrated CO2 absorbance for spectra
+function absorbance = IntegratedAbsorbance(spectra, freq_list)
     % Indices of CO2 gas line frequencies
-    CO2Freq = (2200 < freq_list) & (freq_list < 2400);
+    CO2Freq = (2295 < freq_list) & (freq_list < 2390);
 
-    % Max absorbance of CO2 for each spectrum
-    max_abs_CO2 = [];
+    % Integrated absorbance of CO2 for each spectrum
+    integrated_abs_CO2 = [];
     for k = 1:size(spectra, 2)
-        spectrum = spectra(:, k);
-        max_abs_CO2 = [max_abs_CO2 max(spectrum(CO2Freq))];
+        spectrum = spectra(CO2Freq, k);
+        integrated_abs_CO2 = [integrated_abs_CO2 trapz(spectrum)];
     end
 
-    absorbance = max_abs_CO2;
+    absorbance = integrated_abs_CO2;
 end
