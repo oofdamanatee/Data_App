@@ -8,7 +8,7 @@
 % ---- IMPORTANT!!! Input the correct data right from the start. This will put
 % all the data in the right place. If the date is wrong, it could overwrite
 % previous analysis.
-date_of_experiment = "2025-06-12";
+date_of_experiment = "2025-08-04";
 % ----
 year_of_experiment = year(datetime(date_of_experiment));
 
@@ -27,11 +27,11 @@ end
 %% Step 1:Load in the spectra
 cd ~
 % --- the indices of the spectra you wish to use ----
-spectra_range = 1:284; 
+spectra_range = 1:38; 
 % ----
 
 % --- the spectra file prefix ---
-file_prefix = 'PA_20250612_Trial4_';
+file_prefix = 'PA_20250804_lagtime_';
 % ----
 
 cd(data_path)
@@ -47,8 +47,8 @@ fprintf("Successfully imported " + size(data1, 2) + " spectra.\n")
 
 % --- experimental parameters ---
 spacer_size = 12;  % in microns
-flow_rate = 0.5; % in mL/min
-timeZero = datetime('12-Jun-2025 13:38:45'); % According to 24hr clock as hr:min:sec
+flow_rate = 4.0; % in mL/min
+timeZero = datetime('04-Aug-2025 16:15:15'); % According to 24hr clock as hr:min:sec
 your_name = "Pratham";
 % ---
 
@@ -64,7 +64,8 @@ sub_data = data1(:, (2+ignored_spectra):end) - data1(:,(2+ignored_spectra)); % C
 abs_CO2 = IntegratedAbsorbance(sub_data, freq);
 
 % Total time taken to reach equilibrium CO2 pressure in brass cell
-lagTime = times(end) / 60; % in minutes
+[useless, ind_Max] = max(abs_CO2);
+lagTime = times(ind_Max) / 60; % in minutes
 %% Plot the Integrated Absorbance
 
 if flow_rate > 2
@@ -79,7 +80,7 @@ title('Integrated absorbance of CO2 in Empty Brass Cell Over Time')
 xlabel('Time (s)')
 ylabel('Integrated Absorbance')
 
-annotation('textbox', [.6,.2, .3, .3], 'String',{'  Date: ' + date_of_experiment, '  Flow rate (mL/min): '+ string(flow_rate), '  Spacer size (µm): ' + string(spacer_size)}, 'FitBoxToText', 'on')
+annotation('textbox', [.4,.2, .3, .3], 'String',{'  Date: ' + date_of_experiment, '  Flow rate (mL/min): '+ string(flow_rate), '  Spacer size (µm): ' + string(spacer_size)}, 'FitBoxToText', 'on')
 
 
 %% Export figure
