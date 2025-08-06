@@ -8,7 +8,7 @@
 % ---- IMPORTANT!!! Input the correct data right from the start. This will put
 % all the data in the right place. If the date is wrong, it could overwrite
 % previous analysis.
-date_of_experiment = "2025-08-04";
+date_of_experiment = "2025-08-05";
 % ----
 year_of_experiment = year(datetime(date_of_experiment));
 
@@ -27,11 +27,11 @@ end
 %% Step 1:Load in the spectra
 cd ~
 % --- the indices of the spectra you wish to use ----
-spectra_range = 1:38; 
+spectra_range = 1:46; 
 % ----
 
 % --- the spectra file prefix ---
-file_prefix = 'PA_20250804_lagtime_';
+file_prefix = 'PA_20250805_Trial7N2purge_';
 % ----
 
 cd(data_path)
@@ -43,12 +43,13 @@ if freq(2) - freq(1) > 0
 end
 
 fprintf("Successfully imported " + size(data1, 2) + " spectra.\n")
+
 %% Data Analysis
 
 % --- experimental parameters ---
 spacer_size = 12;  % in microns
 flow_rate = 4.0; % in mL/min
-timeZero = datetime('04-Aug-2025 16:15:15'); % According to 24hr clock as hr:min:sec
+timeZero = datetime('05-Aug-2025 11:03:39'); % According to 24hr clock as hr:min:sec
 your_name = "Pratham";
 % ---
 
@@ -59,7 +60,18 @@ times = timeAxis(data_path,file_prefix,spectra_range, timeZero);
 ignored_spectra = numel(spectra_range) - numel(times); % Number of spectra taken before time zero (to be ignored)
 sub_data = data1(:, (2+ignored_spectra):end) - data1(:,(2+ignored_spectra)); % Contains difference spectra
 
+%% flipbook of spectra
 
+n_spectra = size(sub_data, 2);
+for ii= 1:n_spectra
+    figure(10)
+    plot(freq, sub_data(:,ii))
+    set(gca, "YLim", [-0.12, 0.2])  
+    pause  
+
+end
+
+%%
 % Find the integrated absorbance of CO2 for each used spectrum
 abs_CO2 = IntegratedAbsorbance(sub_data, freq);
 
@@ -73,20 +85,19 @@ if flow_rate > 2
 else
     marker = 6;
 end
-
 figure;
 plot(times(2:end), abs_CO2, "r.", MarkerSize= marker)
 title('Integrated absorbance of CO2 in Empty Brass Cell Over Time')
 xlabel('Time (s)')
 ylabel('Integrated Absorbance')
 
-annotation('textbox', [.4,.2, .3, .3], 'String',{'  Date: ' + date_of_experiment, '  Flow rate (mL/min): '+ string(flow_rate), '  Spacer size (µm): ' + string(spacer_size)}, 'FitBoxToText', 'on')
+annotation('textbox', [.6,.4, .3, .3], 'String',{'  Date: ' + date_of_experiment, '  CO2 Flow rate (mL/min): '+ string(flow_rate), '  Spacer size (µm): ' + string(spacer_size)}, 'FitBoxToText', 'on')
 
 
 %% Export figure
 ax = gca;
 % ------ Figure Name ------
-exportgraphics(ax, '/Users/oofdamanatee/Downloads/Figure_3.pdf')
+exportgraphics(ax, '/Users/oofdamanatee/Downloads/Figure_8.pdf')
 % ------
 
 %% Functions
@@ -124,9 +135,17 @@ function timeArray = timeAxis(varargin)
 end
 
 % Find integrated CO2 absorbance for spectra
-function absorbance = IntegratedAbsorbance(spectra, freq_list)
+function absorbance = IntegratedAbsorbance(spectra, freq_list, varargin)
+    range = [2295, 2390];
+
+    if nargin == 3
+       range = varargin{1};
+    end
+
     % Indices of CO2 gas line frequencies
-    CO2Freq = (2295 < freq_list) & (freq_list < 2390);
+    CO2Freq = (range(1) < freq_list) & (freq_list < range(2));
+
+
 
     % Integrated absorbance of CO2 for each spectrum
     integrated_abs_CO2 = [];

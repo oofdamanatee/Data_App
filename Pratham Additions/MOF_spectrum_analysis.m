@@ -31,11 +31,11 @@ spectra_range = 1;
 % ----
 
 % --- the spectra file prefix or full name (if only using 1 spectrum) ---
-file_name = 'PA_20250725_Methanol';
+file_name = 'PA_20250725_Methanol_';
 % ----
 
 cd(data_path)
-[data1,freq] = LoadSpectra(data_path,file_name,spectra_range);
+[data1,freq] = LoadSpectra();
 freq = freq(:,1);
 
 if freq(2) - freq(1) > 0
@@ -44,6 +44,8 @@ end
 
 fprintf("Successfully imported " + size(data1, 2) + " spectra.\n")
 %% Plot the Spectra
+plot(freq, data1)
+
 
 %% Functions
 
